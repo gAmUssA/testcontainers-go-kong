@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/magiconair/properties/assert"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"net/http"
@@ -68,7 +69,8 @@ func setupKong(ctx context.Context) (*kongContainer, error) {
 	return &kongContainer{Container: container, URI: uri}, nil
 }
 
-func TestIntegrationNginxLatestReturn(t *testing.T) {
+func TestKongAdminAPI_ReturnVersion(t *testing.T) {
+
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
@@ -80,6 +82,7 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// doesn't work 🤷‍♂️
 	consumer := TestLogConsumer{
 		Msgs: []string{},
 		Ack:  make(chan bool),
@@ -95,10 +98,15 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 	defer kong.Terminate(ctx)
 
 	resp, err := http.Get(kong.URI)
-	if resp.StatusCode != http.StatusOK {
+
+	// go get github.com/stretchr/testify
+	assert.Equal(t, resp.StatusCode, http.StatusOK)
+	assert.Equal(t, resp.Header.Get("Server"), "kong/2.6.0")
+
+	/*if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 	}
 	if resp.Header.Get("Server") != "kong/2.6.0" {
 		t.Fatalf("Expected version %s. Got %s.", "2.6", resp.Header.Get("Server"))
-	}
+	}*/
 }
