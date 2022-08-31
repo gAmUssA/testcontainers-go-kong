@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"github.com/magiconair/properties/assert"
 	"github.com/testcontainers/testcontainers-go"
+	"io"
+	"log"
 	"net/http"
+	"strings"
 	"testing"
 )
 
@@ -33,7 +36,18 @@ func TestKongAdminAPI_ReturnVersion(t *testing.T) {
 
 	ctx := context.Background()
 
-	kong, err := setupKong(ctx)
+	env := map[string]string{
+		"KONG_DATABASE": "off",
+		//"KONG_LOG_LEVEL":        "debug",
+		"KONG_PROXY_ACCESS_LOG": "/dev/stdout",
+		"KONG_ADMIN_ACCESS_LOG": "/dev/stdout",
+		"KONG_PROXY_ERROR_LOG":  "/dev/stderr",
+		"KONG_ADMIN_ERROR_LOG":  "/dev/stderr",
+		"KONG_ADMIN_LISTEN":     "0.0.0.0:8001",
+		//"KONG_DECLARATIVE_CONFIG": "/usr/local/kong/kong.yaml",
+	}
+
+	kong, err := SetupKong(ctx, "kong:2.8.1", env)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,6 +72,13 @@ func TestKongAdminAPI_ReturnVersion(t *testing.T) {
 	// go get github.com/stretchr/testify
 	assert.Equal(t, resp.StatusCode, http.StatusOK)
 	assert.Equal(t, resp.Header.Get("Server"), "kong/2.8.1")
+
+	get, err := http.Get(kong.ProxyURI)
+	all, err := io.ReadAll(get.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	assert.Equal(t, strings.Contains(string(all), "no Route matched with those values"), true)
 
 	/*if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)

@@ -5,34 +5,39 @@ import (
 	"fmt"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"log"
 )
 
 type kongContainer struct {
 	testcontainers.Container
-	URI string
+	URI      string
+	ProxyURI string
 }
 
-func setupKong(ctx context.Context) (*kongContainer, error) {
+func SetupKong(ctx context.Context, image string, environment map[string]string) (*kongContainer, error) {
+
 	req := testcontainers.ContainerRequest{
-		Image:        "kong:2.8",
-		ExposedPorts: []string{"8001/tcp"},
-		WaitingFor:   wait.ForLog("start worker process"),
-		Cmd:          []string{"kong", "start"},
-		Env: map[string]string{
-			"KONG_DATABASE":         "off",
-			"KONG_PROXY_ACCESS_LOG": "/dev/stdout",
-			"KONG_ADMIN_ACCESS_LOG": "/dev/stdout",
-			"KONG_PROXY_ERROR_LOG":  "/dev/stderr",
-			"KONG_ADMIN_ERROR_LOG":  "/dev/stderr",
-			"KONG_ADMIN_LISTEN":     "0.0.0.0:8001",
+		Image:        image,
+		ExposedPorts: []string{"8001/tcp", "8000/tcp"},
+		WaitingFor:   wait.ForListeningPort("8001/tcp"),
+		//Cmd:          []string{"kong", "start"},
+		Cmd: []string{"kong", "start"},
+		Env: environment,
+		Files: []testcontainers.ContainerFile{
+			{
+				HostFilePath:      "./kong.yaml",
+				ContainerFilePath: "/usr/local/kong/kong.yaml",
+				FileMode:          755,
+			},
 		},
 	}
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
+
 	if err != nil {
-		return nil, err
+		log.Fatal(err)
 	}
 
 	ip, err := container.Host(ctx)
@@ -47,5 +52,12 @@ func setupKong(ctx context.Context) (*kongContainer, error) {
 
 	uri := fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
 
-	return &kongContainer{Container: container, URI: uri}, nil
+	proxyMappedPort, err := container.MappedPort(ctx, "8000")
+	if err != nil {
+		return nil, err
+	}
+
+	pUri := fmt.Sprintf("http://%s:%s", ip, proxyMappedPort.Port())
+
+	return &kongContainer{Container: container, URI: uri, ProxyURI: pUri}, nil
 }
