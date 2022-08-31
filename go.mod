@@ -3,7 +3,7 @@ module github.com/gamussa/testcontainers-go-kong
 go 1.17
 
 require (
-	github.com/magiconair/properties v1.8.5
+	github.com/magiconair/properties v1.8.6
 	github.com/testcontainers/testcontainers-go v0.13.0
 )
 
