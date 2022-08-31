@@ -14,7 +14,7 @@ type kongContainer struct {
 
 func setupKong(ctx context.Context) (*kongContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "kong:2.6",
+		Image:        "kong:2.8",
 		ExposedPorts: []string{"8001/tcp"},
 		WaitingFor:   wait.ForLog("start worker process"),
 		Cmd:          []string{"kong", "start"},

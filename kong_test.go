@@ -57,7 +57,7 @@ func TestKongAdminAPI_ReturnVersion(t *testing.T) {
 
 	// go get github.com/stretchr/testify
 	assert.Equal(t, resp.StatusCode, http.StatusOK)
-	assert.Equal(t, resp.Header.Get("Server"), "kong/2.6.0")
+	assert.Equal(t, resp.Header.Get("Server"), "kong/2.8.1")
 
 	/*if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
