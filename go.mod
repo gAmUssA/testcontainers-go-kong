@@ -1,8 +1,8 @@
-module konghq.com/testcontainers
+module github.com/gamussa/testcontainers-go-kong
 
 go 1.17
 
-require github.com/testcontainers/testcontainers-go v0.12.0
+require github.com/testcontainers/testcontainers-go v0.13.0
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
