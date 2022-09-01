@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 	"testing"
@@ -49,9 +48,7 @@ func TestKongAdminAPI_ReturnVersion(t *testing.T) {
 	}
 
 	kong, err := SetupKong(ctx, "kong:2.8.1", env)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err)
 
 	// doesn't work 🤷‍♂️
 	consumer := TestLogConsumer{
@@ -59,9 +56,7 @@ func TestKongAdminAPI_ReturnVersion(t *testing.T) {
 		Ack:  make(chan bool),
 	}
 	err = kong.StartLogProducer(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err)
 
 	kong.FollowOutput(&consumer)
 
@@ -69,23 +64,17 @@ func TestKongAdminAPI_ReturnVersion(t *testing.T) {
 	defer kong.Terminate(ctx)
 
 	resp, err := http.Get(kong.URI)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err)
 
 	// go get github.com/stretchr/testify
 	assert.Equal(t, resp.StatusCode, http.StatusOK)
 	assert.Equal(t, resp.Header.Get("Server"), "kong/2.8.1")
 
 	get, err := http.Get(kong.ProxyURI)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err)
 
 	all, err := io.ReadAll(get.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
+	assert.Nil(t, err)
 	assert.Equal(t, strings.Contains(string(all), "no Route matched with those values"), true)
 
 	/*if resp.StatusCode != http.StatusOK {
