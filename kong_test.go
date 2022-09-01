@@ -3,13 +3,14 @@ package kong
 import (
 	"context"
 	"fmt"
-	"github.com/magiconair/properties/assert"
-	"github.com/testcontainers/testcontainers-go"
 	"io"
 	"log"
 	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/testcontainers/testcontainers-go"
 )
 
 type TestLogConsumer struct {

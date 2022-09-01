@@ -3,9 +3,10 @@ package kong
 import (
 	"context"
 	"fmt"
+	"log"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"log"
 )
 
 type kongContainer struct {
