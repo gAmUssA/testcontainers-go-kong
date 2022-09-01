@@ -3,7 +3,6 @@ module github.com/gamussa/testcontainers-go-kong
 go 1.17
 
 require (
-	github.com/spyzhov/ajson v0.7.1
 	github.com/stretchr/testify v1.8.0
 	github.com/testcontainers/testcontainers-go v0.13.1-0.20220829163733-097f9af0d0b7
 )
