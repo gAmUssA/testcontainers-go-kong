@@ -3,6 +3,7 @@ package kong
 import (
 	"context"
 	"fmt"
+	"github.com/spyzhov/ajson"
 	"io"
 	"net/http"
 	"strings"
@@ -74,8 +75,11 @@ func TestKongAdminAPI_ReturnVersion(t *testing.T) {
 	assert.Nil(t, err)
 
 	all, err := io.ReadAll(get.Body)
+	root, err := ajson.Unmarshal(all)
+	result, err := root.JSONPath("$.headers.host")
+	value, err := result[0].GetString()
 	assert.Nil(t, err)
-	assert.Equal(t, strings.Contains(string(all), "no Route matched with those values"), true, string(all))
+	assert.True(t, strings.Contains(value, "mockbin"))
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "kong/2.6.0", resp.Header.Get("Server"), "Expected version %s. Got %s.", "2.6", resp.Header.Get("Server"))
+	assert.Equal(t, "kong/2.8.1", resp.Header.Get("Server"), "Expected version %s. Got %s.", "2.6", resp.Header.Get("Server"))
 }
