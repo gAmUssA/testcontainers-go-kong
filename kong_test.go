@@ -69,12 +69,19 @@ func TestKongAdminAPI_ReturnVersion(t *testing.T) {
 	defer kong.Terminate(ctx)
 
 	resp, err := http.Get(kong.URI)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// go get github.com/stretchr/testify
 	assert.Equal(t, resp.StatusCode, http.StatusOK)
 	assert.Equal(t, resp.Header.Get("Server"), "kong/2.8.1")
 
 	get, err := http.Get(kong.ProxyURI)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	all, err := io.ReadAll(get.Body)
 	if err != nil {
 		log.Fatal(err)
