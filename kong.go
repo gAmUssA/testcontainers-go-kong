@@ -3,9 +3,10 @@ package kong
 import (
 	"context"
 	"fmt"
+	"log"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"log"
 )
 
 type kongContainer struct {
@@ -27,7 +28,7 @@ func SetupKong(ctx context.Context, image string, environment map[string]string)
 			{
 				HostFilePath:      "./kong.yaml",
 				ContainerFilePath: "/usr/local/kong/kong.yaml",
-				FileMode:          755,
+				FileMode:          0644, // see https://github.com/supabase/cli/pull/132/files
 			},
 		},
 	}

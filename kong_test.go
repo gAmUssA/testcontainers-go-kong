@@ -3,13 +3,13 @@ package kong
 import (
 	"context"
 	"fmt"
-	"github.com/magiconair/properties/assert"
-	"github.com/testcontainers/testcontainers-go"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/testcontainers/testcontainers-go"
 )
 
 type TestLogConsumer struct {
@@ -37,20 +37,18 @@ func TestKongAdminAPI_ReturnVersion(t *testing.T) {
 	ctx := context.Background()
 
 	env := map[string]string{
-		"KONG_DATABASE": "off",
-		//"KONG_LOG_LEVEL":        "debug",
-		"KONG_PROXY_ACCESS_LOG": "/dev/stdout",
-		"KONG_ADMIN_ACCESS_LOG": "/dev/stdout",
-		"KONG_PROXY_ERROR_LOG":  "/dev/stderr",
-		"KONG_ADMIN_ERROR_LOG":  "/dev/stderr",
-		"KONG_ADMIN_LISTEN":     "0.0.0.0:8001",
-		//"KONG_DECLARATIVE_CONFIG": "/usr/local/kong/kong.yaml",
+		"KONG_DATABASE":           "off",
+		"KONG_LOG_LEVEL":          "debug",
+		"KONG_PROXY_ACCESS_LOG":   "/dev/stdout",
+		"KONG_ADMIN_ACCESS_LOG":   "/dev/stdout",
+		"KONG_PROXY_ERROR_LOG":    "/dev/stderr",
+		"KONG_ADMIN_ERROR_LOG":    "/dev/stderr",
+		"KONG_ADMIN_LISTEN":       "0.0.0.0:8001",
+		"KONG_DECLARATIVE_CONFIG": "/usr/local/kong/kong.yaml",
 	}
 
 	kong, err := SetupKong(ctx, "kong:2.8.1", env)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err)
 
 	// doesn't work 🤷‍♂️
 	consumer := TestLogConsumer{
@@ -58,9 +56,7 @@ func TestKongAdminAPI_ReturnVersion(t *testing.T) {
 		Ack:  make(chan bool),
 	}
 	err = kong.StartLogProducer(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err)
 
 	kong.FollowOutput(&consumer)
 
@@ -68,22 +64,18 @@ func TestKongAdminAPI_ReturnVersion(t *testing.T) {
 	defer kong.Terminate(ctx)
 
 	resp, err := http.Get(kong.URI)
+	assert.Nil(t, err)
 
 	// go get github.com/stretchr/testify
 	assert.Equal(t, resp.StatusCode, http.StatusOK)
 	assert.Equal(t, resp.Header.Get("Server"), "kong/2.8.1")
 
 	get, err := http.Get(kong.ProxyURI)
-	all, err := io.ReadAll(get.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	assert.Equal(t, strings.Contains(string(all), "no Route matched with those values"), true)
+	assert.Nil(t, err)
 
-	/*if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
-	}
-	if resp.Header.Get("Server") != "kong/2.6.0" {
-		t.Fatalf("Expected version %s. Got %s.", "2.6", resp.Header.Get("Server"))
-	}*/
+	all, err := io.ReadAll(get.Body)
+	assert.Nil(t, err)
+	assert.Equal(t, strings.Contains(string(all), "no Route matched with those values"), true, string(all))
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
+	assert.Equal(t, "kong/2.6.0", resp.Header.Get("Server"), "Expected version %s. Got %s.", "2.6", resp.Header.Get("Server"))
 }
