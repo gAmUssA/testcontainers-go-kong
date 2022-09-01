@@ -27,7 +27,7 @@ func SetupKong(ctx context.Context, image string, environment map[string]string)
 			{
 				HostFilePath:      "./kong.yaml",
 				ContainerFilePath: "/usr/local/kong/kong.yaml",
-				FileMode:          755,
+				FileMode:          0644, // see https://github.com/supabase/cli/pull/132/files
 			},
 		},
 	}

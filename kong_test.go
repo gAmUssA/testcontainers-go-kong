@@ -37,14 +37,14 @@ func TestKongAdminAPI_ReturnVersion(t *testing.T) {
 	ctx := context.Background()
 
 	env := map[string]string{
-		"KONG_DATABASE": "off",
-		//"KONG_LOG_LEVEL":        "debug",
-		"KONG_PROXY_ACCESS_LOG": "/dev/stdout",
-		"KONG_ADMIN_ACCESS_LOG": "/dev/stdout",
-		"KONG_PROXY_ERROR_LOG":  "/dev/stderr",
-		"KONG_ADMIN_ERROR_LOG":  "/dev/stderr",
-		"KONG_ADMIN_LISTEN":     "0.0.0.0:8001",
-		//"KONG_DECLARATIVE_CONFIG": "/usr/local/kong/kong.yaml",
+		"KONG_DATABASE":           "off",
+		"KONG_LOG_LEVEL":          "debug",
+		"KONG_PROXY_ACCESS_LOG":   "/dev/stdout",
+		"KONG_ADMIN_ACCESS_LOG":   "/dev/stdout",
+		"KONG_PROXY_ERROR_LOG":    "/dev/stderr",
+		"KONG_ADMIN_ERROR_LOG":    "/dev/stderr",
+		"KONG_ADMIN_LISTEN":       "0.0.0.0:8001",
+		"KONG_DECLARATIVE_CONFIG": "/usr/local/kong/kong.yaml",
 	}
 
 	kong, err := SetupKong(ctx, "kong:2.8.1", env)
