@@ -75,12 +75,7 @@ func TestKongAdminAPI_ReturnVersion(t *testing.T) {
 
 	all, err := io.ReadAll(get.Body)
 	assert.Nil(t, err)
-	assert.Equal(t, strings.Contains(string(all), "no Route matched with those values"), true)
-
-	/*if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
-	}
-	if resp.Header.Get("Server") != "kong/2.6.0" {
-		t.Fatalf("Expected version %s. Got %s.", "2.6", resp.Header.Get("Server"))
-	}*/
+	assert.Equal(t, strings.Contains(string(all), "no Route matched with those values"), true, string(all))
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
+	assert.Equal(t, "kong/2.6.0", resp.Header.Get("Server"), "Expected version %s. Got %s.", "2.6", resp.Header.Get("Server"))
 }
