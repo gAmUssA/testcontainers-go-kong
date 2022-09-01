@@ -124,5 +124,5 @@ func TestKongAdminAPI_ReturnVersion(t *testing.T) {
 	value := res.Headers.Host
 	assert.True(t, strings.Contains(value, "mockbin"))
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "kong/2.8.1", resp.Header.Get("Server"), "Expected version %s. Got %s.", "2.6", resp.Header.Get("Server"))
+	assert.Equal(t, "kong/2.8.1", resp.Header.Get("Server"), "Expected version %s. Got %s.", "2.8.1", resp.Header.Get("Server"))
 }
