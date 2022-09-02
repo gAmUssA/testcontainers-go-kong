@@ -38,7 +38,7 @@ func SetupKong(ctx context.Context, image string, environment map[string]string)
 				FileMode:          0644, // see https://github.com/supabase/cli/pull/132/files
 			},
 			{
-				HostFilePath:      "./go-plugins/bin/goplug", // copy the already compiled binary to the
+				HostFilePath:      "./go-plugins/bin/goplug", // copy the already compiled binary to the plugins dir
 				ContainerFilePath: "/usr/local/kong/go-plugins/bin/goplug",
 				FileMode:          0755,
 			},
