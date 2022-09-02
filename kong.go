@@ -36,11 +36,6 @@ func SetupKong(ctx context.Context, image string, environment map[string]string)
 				ContainerFilePath: "/usr/local/kong/kong.yaml",
 				FileMode:          0644, // see https://github.com/supabase/cli/pull/132/files
 			},
-			{
-				HostFilePath:      "./go-plugins/bin/goplug", // copy the already compiled binary to the
-				ContainerFilePath: "/usr/local/kong/go-plugins/bin/goplug",
-				FileMode:          0755,
-			},
 		},
 	}
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
