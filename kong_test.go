@@ -47,6 +47,11 @@ func TestKongAdminAPI_ReturnVersion(t *testing.T) {
 		"KONG_ADMIN_ERROR_LOG":    "/dev/stderr",
 		"KONG_ADMIN_LISTEN":       "0.0.0.0:8001",
 		"KONG_DECLARATIVE_CONFIG": "/usr/local/kong/kong.yaml",
+		//------------ Kong Plugins -----------------
+		"KONG_PLUGINS":                       "goplug",
+		"KONG_PLUGINSERVER_NAMES":            "goplug",
+		"KONG_PLUGINSERVER_GOPLUG_START_CMD": "/usr/local/kong/go-plugins/bin/goplug",
+		"KONG_PLUGINSERVER_GOPLUG_QUERY_CMD": "/usr/local/kong/go-plugins/bin/goplug -dump",
 	}
 
 	kong, err := SetupKong(ctx, "kong:2.8.1", env)

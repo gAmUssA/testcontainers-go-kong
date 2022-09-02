@@ -5,3 +5,7 @@ services:
     routes:
       - paths:
           - '/'
+    plugins:
+      - name: goplug
+        config:
+          attach: true
