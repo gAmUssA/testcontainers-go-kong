@@ -27,7 +27,9 @@ func (g *TestLogConsumer) Accept(l testcontainers.Log) {
 		return
 	}
 
-	g.Msgs = append(g.Msgs, string(l.Content))
+	logLine := string(l.Content)
+	g.Msgs = append(g.Msgs, logLine)
+	fmt.Print(logLine)
 }
 
 func TestKongAdminAPI_ReturnVersion(t *testing.T) {
@@ -65,6 +67,7 @@ func TestKongAdminAPI_ReturnVersion(t *testing.T) {
 	err = kong.StartLogProducer(ctx)
 	assert.Nil(t, err)
 
+	defer kong.StopLogProducer()
 	kong.FollowOutput(&consumer)
 
 	// Clean up the container after the test is complete
