@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/Kong/go-pdk v0.8.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	github.com/testcontainers/testcontainers-go v0.13.1-0.20220829163733-097f9af0d0b7
 )
 
