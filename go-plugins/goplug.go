@@ -25,7 +25,7 @@ func main() {
 
 func (c Config) Access(kong *pdk.PDK) {
 	userAgent, _ := kong.Request.GetHeader("user-agent")
-	log.Printf("Got request from %s", userAgent)
+	log.Printf("GO-PLUG: Got request from %s", userAgent)
 
 	if c.Attach {
 		if strings.Contains(userAgent, "Kong Builders") {

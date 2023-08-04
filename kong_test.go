@@ -2,14 +2,14 @@ package kong
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
+	"github.com/go-http-utils/headers"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/gavv/httpexpect/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
 )
@@ -56,7 +56,7 @@ func TestKongAdminAPI_ReturnVersion(t *testing.T) {
 		"KONG_PLUGINSERVER_GOPLUG_QUERY_CMD": "/usr/local/kong/go-plugins/bin/goplug -dump",
 	}
 
-	kong, err := SetupKong(ctx, "kong:2.8.1", env)
+	kong, err := SetupKong(ctx, "kong/kong-gateway-dev:3.4.0.0-rc.1", env)
 	assert.Nil(t, err)
 
 	// doesn't work 🤷‍♂️
@@ -73,64 +73,78 @@ func TestKongAdminAPI_ReturnVersion(t *testing.T) {
 	// Clean up the container after the test is complete
 	defer kong.Terminate(ctx)
 
-	resp, err := http.Get(kong.URI)
-	assert.Nil(t, err)
+	e := httpexpect.Default(t, kong.URI)
 
-	// go get github.com/stretchr/testify
-	assert.Equal(t, resp.StatusCode, http.StatusOK)
-	assert.Equal(t, resp.Header.Get("Server"), "kong/2.8.1")
+	//resp, err := http.Get(kong.URI)
+	//assert.Nil(t, err)
+	//
+	//// go get github.com/stretchr/testify
+	//assert.Equal(t, resp.StatusCode, http.StatusOK)
+	//assert.Equal(t, resp.Header.Get("Server"), "kong/2.8.1")
+	// this code is replaced with httpexpect
+	e.GET("/").
+		Expect().
+		Status(http.StatusOK).
+		Header("Server").IsEqual("kong/3.4.0.0-enterprise-edition")
 
-	get, err := http.Get(kong.ProxyURI)
-	assert.Nil(t, err)
+	e = httpexpect.Default(t, kong.ProxyURI)
 
-	all, err := io.ReadAll(get.Body)
-	assert.Nil(t, err)
+	//get, err := http.Get(kong.ProxyURI)
+	//assert.Nil(t, err)
+	//
+	//all, err := io.ReadAll(get.Body)
+	//assert.Nil(t, err)
+	r := e.GET("/").
+		WithHeader(headers.UserAgent, "Kong Builders").
+		Expect()
+	r.Status(http.StatusOK).
+		Header("X-Kong-Builders").
+		IsEqual("Welcome to the jungle 🌴")
 
-	type JSONResponse struct {
-		StartedDateTime time.Time `json:"startedDateTime"`
-		ClientIPAddress string    `json:"clientIPAddress"`
-		Method          string    `json:"method"`
-		URL             string    `json:"url"`
-		HTTPVersion     string    `json:"httpVersion"`
-		Cookies         struct {
-		} `json:"cookies"`
-		Headers struct {
-			Host            string `json:"host"`
-			Connection      string `json:"connection"`
-			AcceptEncoding  string `json:"accept-encoding"`
-			XForwardedFor   string `json:"x-forwarded-for"`
-			CfRay           string `json:"cf-ray"`
-			XForwardedProto string `json:"x-forwarded-proto"`
-			CfVisitor       string `json:"cf-visitor"`
-			XForwardedHost  string `json:"x-forwarded-host"`
-			XForwardedPort  string `json:"x-forwarded-port"`
-			XForwardedPath  string `json:"x-forwarded-path"`
-			UserAgent       string `json:"user-agent"`
-			CfConnectingIP  string `json:"cf-connecting-ip"`
-			CdnLoop         string `json:"cdn-loop"`
-			XRequestID      string `json:"x-request-id"`
-			Via             string `json:"via"`
-			ConnectTime     string `json:"connect-time"`
-			XRequestStart   string `json:"x-request-start"`
-			TotalRouteTime  string `json:"total-route-time"`
-		} `json:"headers"`
-		QueryString struct {
-		} `json:"queryString"`
-		PostData struct {
-			MimeType string        `json:"mimeType"`
-			Text     string        `json:"text"`
-			Params   []interface{} `json:"params"`
-		} `json:"postData"`
-		HeadersSize int `json:"headersSize"`
-		BodySize    int `json:"bodySize"`
-	}
+	r.Header("Via").IsEqual("kong/3.4.0.0-enterprise-edition")
 
-	res := JSONResponse{}
-	err = json.Unmarshal(all, &res)
-	assert.Nil(t, err)
+	var res JSONResponse
+	r.JSON().Decode(&res)
 
 	value := res.Headers.Host
 	assert.True(t, strings.Contains(value, "mockbin"))
-	assert.Equal(t, http.StatusOK, resp.StatusCode, "Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "kong/2.8.1", resp.Header.Get("Server"), "Expected version %s. Got %s.", "2.8.1", resp.Header.Get("Server"))
+}
+
+type JSONResponse struct {
+	StartedDateTime time.Time `json:"startedDateTime"`
+	ClientIPAddress string    `json:"clientIPAddress"`
+	Method          string    `json:"method"`
+	URL             string    `json:"url"`
+	HTTPVersion     string    `json:"httpVersion"`
+	Cookies         struct {
+	} `json:"cookies"`
+	Headers struct {
+		Host            string `json:"host"`
+		Connection      string `json:"connection"`
+		AcceptEncoding  string `json:"accept-encoding"`
+		XForwardedFor   string `json:"x-forwarded-for"`
+		CfRay           string `json:"cf-ray"`
+		XForwardedProto string `json:"x-forwarded-proto"`
+		CfVisitor       string `json:"cf-visitor"`
+		XForwardedHost  string `json:"x-forwarded-host"`
+		XForwardedPort  string `json:"x-forwarded-port"`
+		XForwardedPath  string `json:"x-forwarded-path"`
+		UserAgent       string `json:"user-agent"`
+		CfConnectingIP  string `json:"cf-connecting-ip"`
+		CdnLoop         string `json:"cdn-loop"`
+		XRequestID      string `json:"x-request-id"`
+		Via             string `json:"via"`
+		ConnectTime     string `json:"connect-time"`
+		XRequestStart   string `json:"x-request-start"`
+		TotalRouteTime  string `json:"total-route-time"`
+	} `json:"headers"`
+	QueryString struct {
+	} `json:"queryString"`
+	PostData struct {
+		MimeType string        `json:"mimeType"`
+		Text     string        `json:"text"`
+		Params   []interface{} `json:"params"`
+	} `json:"postData"`
+	HeadersSize int `json:"headersSize"`
+	BodySize    int `json:"bodySize"`
 }
