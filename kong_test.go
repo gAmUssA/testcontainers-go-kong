@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-http-utils/headers"
+	"github.com/stretchr/testify/require"
 	"net/http"
 	"strings"
 	"testing"
@@ -56,8 +57,23 @@ func TestKongAdminAPI_ReturnVersion(t *testing.T) {
 		"KONG_PLUGINSERVER_GOPLUG_QUERY_CMD": "/usr/local/kong/go-plugins/bin/goplug -dump",
 	}
 
-	kong, err := SetupKong(ctx, "kong/kong-gateway-dev:3.4.0.0-rc.1", env)
-	assert.Nil(t, err)
+	files := []testcontainers.ContainerFile{
+		{
+			HostFilePath:      "./kong.yaml",
+			ContainerFilePath: "/usr/local/kong/kong.yaml",
+			FileMode:          0644, // see https://github.com/supabase/cli/pull/132/files
+		},
+		{
+			HostFilePath:      "./go-plugins/bin/goplug", // copy the already compiled binary to the plugins dir
+			ContainerFilePath: "/usr/local/kong/go-plugins/bin/goplug",
+			FileMode:          0755,
+		},
+	}
+	kong, err := SetupKong(ctx,
+		"kong/kong-gateway-dev:3.4.0.0-rc.1",
+		env,
+		files)
+	require.NoError(t, err)
 
 	// doesn't work 🤷‍♂️
 	consumer := TestLogConsumer{
@@ -71,7 +87,11 @@ func TestKongAdminAPI_ReturnVersion(t *testing.T) {
 	kong.FollowOutput(&consumer)
 
 	// Clean up the container after the test is complete
-	defer kong.Terminate(ctx)
+	t.Cleanup(func() {
+		if err := kong.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate container: %s", err)
+		}
+	})
 
 	e := httpexpect.Default(t, kong.URI)
 
