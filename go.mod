@@ -4,7 +4,9 @@ go 1.19
 
 require (
 	github.com/Kong/go-pdk v0.8.0
+	github.com/docker/go-connections v0.4.0
 	github.com/gavv/httpexpect/v2 v2.15.0
+	github.com/go-http-utils/headers v0.0.0-20181008091004-fed159eddc2a
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.22.0
 )
@@ -21,11 +23,9 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/docker v24.0.5+incompatible // indirect
-	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
-	github.com/go-http-utils/headers v0.0.0-20181008091004-fed159eddc2a // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
