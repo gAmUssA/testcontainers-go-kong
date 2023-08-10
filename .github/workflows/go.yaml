@@ -11,15 +11,23 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
           go-version: 1.19
-
-      - name: Build
-        run: go build -v ./...
+      - name: Setup gotestsum
+        uses: autero1/action-gotestsum@v2
+        with:
+          gotestsum_version: 0.4.1
 
       - name: Test
-        run: go test -v ./...
+        run: make test-kong
+        
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: |
+            test-results/**/*.xml

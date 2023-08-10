@@ -4,16 +4,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/docker/go-connections/nat"
-	"log"
-
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"log"
 )
 
 type kongContainer struct {
 	testcontainers.Container
-	URI      string
-	ProxyURI string
 }
 
 // TODO: mention all ports
@@ -22,29 +19,29 @@ var (
 	defaultAdminAPIPort = "8001/tcp"
 )
 
-func SetupKong(ctx context.Context,
-	image string,
-	environment map[string]string,
-	files []testcontainers.ContainerFile,
-	opts ...testcontainers.ContainerCustomizer) (*kongContainer, error) {
+// RunContainer is the entrypoint to the module
+func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*kongContainer, error) {
 
 	req := testcontainers.ContainerRequest{
-		// needed because the official Docker image does not have the go-plugins/bin directory already created
-		FromDockerfile: testcontainers.FromDockerfile{
-			Context: ".",
-			BuildArgs: map[string]*string{
-				"TC_KONG_IMAGE": &image,
-			},
-			PrintBuildLog: true,
-		},
+		//Image: "kong/kong-gateway:3.3.0",
 		ExposedPorts: []string{
 			defaultProxyPort,
 			defaultAdminAPIPort},
 		WaitingFor: wait.ForListeningPort(nat.Port(defaultAdminAPIPort)),
 		Cmd:        []string{"kong", "start"},
-		Env:        environment,
-		Files:      files,
+		Env: map[string]string{
+			// default env variables, can be overwritten in test method
+			"KONG_DATABASE":           "off",
+			"KONG_LOG_LEVEL":          "debug",
+			"KONG_PROXY_ACCESS_LOG":   "/dev/stdout",
+			"KONG_ADMIN_ACCESS_LOG":   "/dev/stdout",
+			"KONG_PROXY_ERROR_LOG":    "/dev/stderr",
+			"KONG_ADMIN_ERROR_LOG":    "/dev/stderr",
+			"KONG_ADMIN_LISTEN":       "0.0.0.0:8001",
+			"KONG_DECLARATIVE_CONFIG": "/usr/local/kong/kong.yaml",
+		},
 	}
+
 	genericContainerRequest := testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
@@ -55,29 +52,41 @@ func SetupKong(ctx context.Context,
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerRequest)
-
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	ip, err := container.Host(ctx)
-	if err != nil {
-		return nil, err
-	}
+	return &kongContainer{Container: container}, nil
+}
 
-	mappedPort, err := container.MappedPort(ctx, nat.Port(defaultAdminAPIPort))
+// KongUrls returns admin url, proxy url, or error
+func (c kongContainer) KongUrls(ctx context.Context, args ...string) (string, string, error) {
+	ip, err := c.Host(ctx)
 	if err != nil {
-		return nil, err
+		return "", "", err
 	}
-
+	mappedPort, err := c.MappedPort(ctx, nat.Port(defaultAdminAPIPort))
+	if err != nil {
+		return "", "", err
+	}
 	uri := fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
 
-	proxyMappedPort, err := container.MappedPort(ctx, nat.Port(defaultProxyPort))
+	proxyMappedPort, err := c.MappedPort(ctx, nat.Port(defaultProxyPort))
 	if err != nil {
-		return nil, err
+		return "", "", err
 	}
 
 	pUri := fmt.Sprintf("http://%s:%s", ip, proxyMappedPort.Port())
 
-	return &kongContainer{Container: container, URI: uri, ProxyURI: pUri}, nil
+	return uri, pUri, nil
+}
+
+// KongCustomizer type represents a container customizer for transferring state from the options to the container
+type KongCustomizer struct {
+}
+
+// Customize method implementation
+func (c KongCustomizer) Customize(req *testcontainers.GenericContainerRequest) testcontainers.ContainerRequest {
+	//	req.ExposedPorts = append(req.ExposedPorts, "1234/tcp")
+	return req.ContainerRequest
 }

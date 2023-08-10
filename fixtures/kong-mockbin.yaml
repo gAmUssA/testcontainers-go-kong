@@ -1,0 +1,9 @@
+_format_version: "3.0"
+services:
+  - name: mock
+    host: mockbin.org
+    port: 80
+    protocol: http
+    routes:
+      - paths:
+          - /mock
