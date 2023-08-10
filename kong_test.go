@@ -112,8 +112,8 @@ func TestKongGoPlugin_ModifiesHeaders(t *testing.T) {
 		//------------ Kong Plugins -----------------
 		"KONG_PLUGINS":                       "goplug",
 		"KONG_PLUGINSERVER_NAMES":            "goplug",
-		"KONG_PLUGINSERVER_GOPLUG_START_CMD": "/usr/local/kong/go-plugins/bin/goplug",
-		"KONG_PLUGINSERVER_GOPLUG_QUERY_CMD": "/usr/local/kong/go-plugins/bin/goplug -dump",
+		"KONG_PLUGINSERVER_GOPLUG_START_CMD": "/usr/local/bin/goplug",
+		"KONG_PLUGINSERVER_GOPLUG_QUERY_CMD": "/usr/local/bin/goplug -dump",
 	}
 
 	files := []testcontainers.ContainerFile{
@@ -124,7 +124,7 @@ func TestKongGoPlugin_ModifiesHeaders(t *testing.T) {
 		},
 		{
 			HostFilePath:      "./go-plugins/bin/goplug", // copy the already compiled binary to the plugins dir
-			ContainerFilePath: "/usr/local/kong/go-plugins/bin/goplug",
+			ContainerFilePath: "/usr/local/bin/goplug",
 			FileMode:          0755,
 		},
 	}
@@ -133,13 +133,14 @@ func TestKongGoPlugin_ModifiesHeaders(t *testing.T) {
 	kong, err := RunContainer(ctx, testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			// needed because the official Docker image does not have the go-plugins/bin directory already created
-			FromDockerfile: testcontainers.FromDockerfile{
+			Image: image,
+			/*FromDockerfile: testcontainers.FromDockerfile{
 				Context: ".",
 				BuildArgs: map[string]*string{
 					"TC_KONG_IMAGE": &image,
 				},
 				PrintBuildLog: true,
-			},
+			},*/
 			Env:        env,
 			Files:      files,
 			WaitingFor: wait.ForLog("Listening on socket: /usr/local/kong/goplug.socket").WithStartupTimeout(30 * time.Second),
