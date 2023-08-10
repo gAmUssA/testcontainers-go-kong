@@ -8,9 +8,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 )
 
 type TestLogConsumer struct {
@@ -127,7 +129,7 @@ func TestKongGoPlugin_ModifiesHeaders(t *testing.T) {
 		},
 	}
 
-	image := "kong/kong-gateway-dev:3.4.0.0-rc.1"
+	image := "kong/kong:3.4.0"
 	kong, err := RunContainer(ctx, testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			// needed because the official Docker image does not have the go-plugins/bin directory already created
@@ -138,8 +140,9 @@ func TestKongGoPlugin_ModifiesHeaders(t *testing.T) {
 				},
 				PrintBuildLog: true,
 			},
-			Env:   env,
-			Files: files,
+			Env:        env,
+			Files:      files,
+			WaitingFor: wait.ForLog("Listening on socket: /usr/local/kong/goplug.socket").WithStartupTimeout(30 * time.Second),
 		},
 	}))
 	require.NoError(t, err)
@@ -172,7 +175,7 @@ func TestKongGoPlugin_ModifiesHeaders(t *testing.T) {
 		Header("X-Kong-Builders").
 		IsEqual("Welcome to the jungle 🌴")
 
-	r.Header("Via").IsEqual("kong/3.4.0.0-enterprise-edition")
+	r.Header("Via").IsEqual("kong/3.4.0")
 
 	var res JSONResponse
 	r.JSON().Decode(&res)
