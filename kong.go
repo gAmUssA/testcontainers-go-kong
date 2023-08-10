@@ -15,8 +15,9 @@ type kongContainer struct {
 
 // TODO: mention all ports
 var (
-	defaultProxyPort    = "8000/tcp"
-	defaultAdminAPIPort = "8001/tcp"
+	defaultProxyPort       = "8000/tcp"
+	defaultAdminAPIPort    = "8001/tcp"
+	defaultKongManagerPort = "8002/tcp"
 )
 
 // RunContainer is the entrypoint to the module
