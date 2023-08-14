@@ -41,6 +41,13 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			"KONG_ADMIN_LISTEN":       "0.0.0.0:8001",
 			"KONG_DECLARATIVE_CONFIG": "/usr/local/kong/kong.yaml",
 		},
+		Files: []testcontainers.ContainerFile{
+			{
+				HostFilePath:      filepath.Join(".", "testdata", "kong-config-default.yaml"),
+				ContainerFilePath: "/usr/local/kong/kong.yaml",
+				FileMode:          0644, // see
+			},
+		},
 	}
 
 	genericContainerRequest := testcontainers.GenericContainerRequest{
