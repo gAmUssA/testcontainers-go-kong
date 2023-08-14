@@ -73,20 +73,17 @@ func TestKongAdminAPI_ReturnVersion(t *testing.T) {
 				}
 			})
 
-			adminUrl, proxy, err := kong.KongUrls(ctx)
-			require.Nil(t, err)
-
-			e := httpexpect.Default(t, adminUrl)
+			e := httpexpect.Default(t, kong.AdminURL)
 
 			e.GET("/").
 				Expect().
 				Status(http.StatusOK).
 				Header("Server").IsEqual(tt.version)
 
-			e = httpexpect.Default(t, proxy)
+			e = httpexpect.Default(t, kong.ProxyURL)
 			e.GET("/mock/requests").
 				Expect().Status(http.StatusOK).
-				JSON().Object().ContainsKey("url").HasValue("url", "http://localhost/request/mock/requests")
+				JSON().Object().ContainsKey("url").HasValue("url", "http://"+kong.Host+"/request/mock/requests")
 		})
 	}
 }
@@ -122,10 +119,7 @@ func TestKongGoPlugin_ModifiesHeaders(t *testing.T) {
 		}
 	})
 
-	_, proxyUrl, err := kong.KongUrls(ctx)
-	require.Nil(t, err)
-
-	e := httpexpect.Default(t, proxyUrl)
+	e := httpexpect.Default(t, kong.ProxyURL)
 
 	r := e.GET("/").
 		WithHeader(headers.UserAgent, "Kong Builders").

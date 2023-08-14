@@ -13,6 +13,10 @@ import (
 
 type kongContainer struct {
 	testcontainers.Container
+	Host       string
+	AdminURL   string
+	ProxyURL   string
+	ManagerURL string
 }
 
 // TODO: mention all ports
@@ -67,7 +71,33 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, err
 	}
 
-	return &kongContainer{Container: container}, nil
+	ip, err := container.Host(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	adminMappedPort, err := container.MappedPort(ctx, nat.Port(defaultAdminAPIPort))
+	if err != nil {
+		return nil, err
+	}
+
+	proxyMappedPort, err := container.MappedPort(ctx, nat.Port(defaultProxyPort))
+	if err != nil {
+		return nil, err
+	}
+
+	managerMappedPort, err := container.MappedPort(ctx, nat.Port(defaultKongManagerPort))
+	if err != nil {
+		return nil, err
+	}
+
+	return &kongContainer{
+		Container:  container,
+		Host:       ip,
+		AdminURL:   fmt.Sprintf("http://%s:%s", ip, adminMappedPort.Port()),
+		ProxyURL:   fmt.Sprintf("http://%s:%s", ip, proxyMappedPort.Port()),
+		ManagerURL: fmt.Sprintf("http://%s:%s", ip, managerMappedPort.Port()),
+	}, nil
 }
 
 // WithConfig adds the kong config file to the container, in the
@@ -134,26 +164,4 @@ func appendToCommaSeparatedList(list, item string) string {
 		return list + "," + item
 	}
 	return item
-}
-
-// KongUrls returns admin url, proxy url, or error
-func (c kongContainer) KongUrls(ctx context.Context, args ...string) (string, string, error) {
-	ip, err := c.Host(ctx)
-	if err != nil {
-		return "", "", err
-	}
-	mappedPort, err := c.MappedPort(ctx, nat.Port(defaultAdminAPIPort))
-	if err != nil {
-		return "", "", err
-	}
-	uri := fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
-
-	proxyMappedPort, err := c.MappedPort(ctx, nat.Port(defaultProxyPort))
-	if err != nil {
-		return "", "", err
-	}
-
-	pUri := fmt.Sprintf("http://%s:%s", ip, proxyMappedPort.Port())
-
-	return uri, pUri, nil
 }
