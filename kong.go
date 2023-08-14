@@ -153,13 +153,3 @@ func (c kongContainer) KongUrls(ctx context.Context, args ...string) (string, st
 
 	return uri, pUri, nil
 }
-
-// KongCustomizer type represents a container customizer for transferring state from the options to the container
-type KongCustomizer struct {
-}
-
-// Customize method implementation
-func (c KongCustomizer) Customize(req *testcontainers.GenericContainerRequest) testcontainers.ContainerRequest {
-	//	req.ExposedPorts = append(req.ExposedPorts, "1234/tcp")
-	return req.ContainerRequest
-}
