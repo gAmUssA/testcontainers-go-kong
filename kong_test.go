@@ -3,16 +3,18 @@ package kong
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/gavv/httpexpect/v2"
 	"github.com/go-http-utils/headers"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"net/http"
-	"strings"
-	"testing"
-	"time"
 )
 
 type TestLogConsumer struct {
@@ -34,7 +36,6 @@ func (g *TestLogConsumer) Accept(l testcontainers.Log) {
 }
 
 func TestKongAdminAPI_ReturnVersion(t *testing.T) {
-
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
@@ -58,21 +59,15 @@ func TestKongAdminAPI_ReturnVersion(t *testing.T) {
 			version: "kong/3.4.0.0-enterprise-edition",
 		},
 	}
-	files := []testcontainers.ContainerFile{
-		{
-			HostFilePath:      "./fixtures/kong-mockbin.yaml",
-			ContainerFilePath: "/usr/local/kong/kong.yaml",
-			FileMode:          0644, // see https://github.com/supabase/cli/pull/132/files
-		},
-	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			kong, err := RunContainer(ctx, testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
-				ContainerRequest: testcontainers.ContainerRequest{
-					Image: tt.image,
-					Files: files,
-				}}))
+			kong, err := RunContainer(
+				ctx,
+				testcontainers.WithImage(tt.image),
+				WithConfig(filepath.Join(".", "testdata", "kong-plugin.yaml")),
+				WithGoPlugin(filepath.Join(".", "go-plugins", "bin", "goplug")),
+			)
 
 			require.NoError(t, err)
 			// Clean up the container after the test is complete
@@ -95,58 +90,27 @@ func TestKongAdminAPI_ReturnVersion(t *testing.T) {
 			e = httpexpect.Default(t, proxy)
 			e.GET("/mock/requests").
 				Expect().Status(http.StatusOK).
-				JSON().Object().ContainsKey("url").HasValue("url", "http://localhost/requests")
+				JSON().Object().ContainsKey("url").HasValue("url", "http://localhost/request/mock/requests")
 		})
 	}
 }
 
 func TestKongGoPlugin_ModifiesHeaders(t *testing.T) {
-
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
 
 	ctx := context.Background()
 
-	env := map[string]string{
-		"KONG_LOG_LEVEL": "info",
-		//------------ Kong Plugins -----------------
-		"KONG_PLUGINS":                       "goplug",
-		"KONG_PLUGINSERVER_NAMES":            "goplug",
-		"KONG_PLUGINSERVER_GOPLUG_START_CMD": "/usr/local/bin/goplug",
-		"KONG_PLUGINSERVER_GOPLUG_QUERY_CMD": "/usr/local/bin/goplug -dump",
-	}
-
-	files := []testcontainers.ContainerFile{
-		{
-			HostFilePath:      "./fixtures/kong-plugin.yaml",
-			ContainerFilePath: "/usr/local/kong/kong.yaml",
-			FileMode:          0644, // see https://github.com/supabase/cli/pull/132/files
-		},
-		{
-			HostFilePath:      "./go-plugins/bin/goplug", // copy the already compiled binary to the plugins dir
-			ContainerFilePath: "/usr/local/bin/goplug",
-			FileMode:          0755,
-		},
-	}
-
-	image := "kong/kong:3.4.0"
-	kong, err := RunContainer(ctx, testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			// needed because the official Docker image does not have the go-plugins/bin directory already created
-			Image: image,
-			/*FromDockerfile: testcontainers.FromDockerfile{
-				Context: ".",
-				BuildArgs: map[string]*string{
-					"TC_KONG_IMAGE": &image,
-				},
-				PrintBuildLog: true,
-			},*/
-			Env:        env,
-			Files:      files,
-			WaitingFor: wait.ForLog("Listening on socket: /usr/local/kong/goplug.socket").WithStartupTimeout(30 * time.Second),
-		},
-	}))
+	kong, err := RunContainer(ctx,
+		testcontainers.WithImage("kong/kong:3.4.0"),
+		WithConfig(filepath.Join(".", "testdata", "kong-plugin.yaml")),
+		WithGoPlugin(filepath.Join(".", "go-plugins", "bin", "goplug")),
+		WithLogLevel("info"),
+		testcontainers.WithWaitStrategy(
+			wait.ForLog("Listening on socket: /usr/local/kong/goplug.socket").WithStartupTimeout(30*time.Second),
+		),
+	)
 	require.NoError(t, err)
 
 	consumer := TestLogConsumer{

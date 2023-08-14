@@ -3,10 +3,13 @@ package kong
 import (
 	"context"
 	"fmt"
+	"log"
+	"path/filepath"
+	"strings"
+
 	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"log"
 )
 
 type kongContainer struct {
@@ -22,12 +25,13 @@ var (
 
 // RunContainer is the entrypoint to the module
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*kongContainer, error) {
-
 	req := testcontainers.ContainerRequest{
-		//Image: "kong/kong-gateway:3.3.0",
+		Image: "kong/kong:3.4.0",
 		ExposedPorts: []string{
 			defaultProxyPort,
-			defaultAdminAPIPort},
+			defaultAdminAPIPort,
+			defaultKongManagerPort,
+		},
 		WaitingFor: wait.ForListeningPort(nat.Port(defaultAdminAPIPort)),
 		Cmd:        []string{"kong", "start"},
 		Env: map[string]string{
@@ -65,6 +69,68 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	return &kongContainer{Container: container}, nil
+}
+
+// WithConfig adds the kong config file to the container, in the
+// "/usr/local/kong/kong.yaml" directory of the container, and
+// setting the KONG_DECLARATIVE_CONFIG environment variable to that path.
+func WithConfig(cfg string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		req.Files = append(req.Files, testcontainers.ContainerFile{
+			HostFilePath:      cfg,
+			ContainerFilePath: "/usr/local/kong/kong.yaml",
+			FileMode:          0644, // see https://github.com/supabase/cli/pull/132/files
+		})
+
+		// is this variable needed by the default kong image?
+		req.Env["KONG_DECLARATIVE_CONFIG"] = "/usr/local/kong/kong.yaml"
+	}
+}
+
+// WithKongEnv sets environment variables for kong container, possibly overwriting defaults
+func WithKongEnv(env map[string]string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		for k, v := range env {
+			req.Env[k] = v
+		}
+	}
+}
+
+// WithLogLevel sets log level for kong container, using the KONG_LOG_LEVEL environment variable.
+func WithLogLevel(level string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		req.Env["KONG_LOG_LEVEL"] = level
+	}
+}
+
+// WithGoPlugin adds a Go plugin to the container, in the "/usr/local/bin" directory of the container
+// appending the plugin name to the KONG_PLUGINS and KONG_PLUGINSERVER_NAMES environment variables,
+// and setting the KONG_PLUGINSERVER_GOPLUG_START_CMD and KONG_PLUGINSERVER_GOPLUG_QUERY_CMD to the
+// executable path of the plugin.
+func WithGoPlugin(goPlugPath string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		pluginName := filepath.Base(goPlugPath) // should be goplug
+
+		req.Files = append(req.Files, testcontainers.ContainerFile{
+			HostFilePath:      goPlugPath,
+			ContainerFilePath: "/usr/local/bin/" + pluginName,
+			FileMode:          0755,
+		})
+
+		req.Env["KONG_PLUGINS"] = appendToCommaSeparatedList(req.Env["KONG_PLUGINS"], pluginName)
+		req.Env["KONG_PLUGINSERVER_NAMES"] = appendToCommaSeparatedList(req.Env["KONG_PLUGINSERVER_NAMES"], pluginName)
+
+		pluginNameUpper := strings.ToUpper(pluginName)
+		req.Env["KONG_PLUGINSERVER_"+pluginNameUpper+"_START_CMD"] = "/usr/local/bin/" + pluginName
+		req.Env["KONG_PLUGINSERVER_"+pluginNameUpper+"_QUERY_CMD"] = "/usr/local/bin/" + pluginName + " -dump"
+	}
+}
+
+func appendToCommaSeparatedList(list, item string) string {
+	if len(list) > 0 {
+		return list + "," + item
+	}
+	return item
 }
 
 // KongUrls returns admin url, proxy url, or error
