@@ -82,7 +82,7 @@ func WithConfig(cfg string) testcontainers.CustomizeRequestOption {
 		})
 
 		// is this variable needed by the default kong image?
-		req.Env["KONG_DECLARATIVE_CONFIG"] = "/usr/local/kong/kong.yaml"
+		WithKongEnv(map[string]string{"KONG_DECLARATIVE_CONFIG": "/usr/local/kong/kong.yaml"})(req)
 	}
 }
 
@@ -98,7 +98,7 @@ func WithKongEnv(env map[string]string) testcontainers.CustomizeRequestOption {
 // WithLogLevel sets log level for kong container, using the KONG_LOG_LEVEL environment variable.
 func WithLogLevel(level string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) {
-		req.Env["KONG_LOG_LEVEL"] = level
+		WithKongEnv(map[string]string{"KONG_LOG_LEVEL": level})(req)
 	}
 }
 
@@ -116,12 +116,16 @@ func WithGoPlugin(goPlugPath string) testcontainers.CustomizeRequestOption {
 			FileMode:          0755,
 		})
 
-		req.Env["KONG_PLUGINS"] = appendToCommaSeparatedList(req.Env["KONG_PLUGINS"], pluginName)
-		req.Env["KONG_PLUGINSERVER_NAMES"] = appendToCommaSeparatedList(req.Env["KONG_PLUGINSERVER_NAMES"], pluginName)
-
 		pluginNameUpper := strings.ToUpper(pluginName)
-		req.Env["KONG_PLUGINSERVER_"+pluginNameUpper+"_START_CMD"] = "/usr/local/bin/" + pluginName
-		req.Env["KONG_PLUGINSERVER_"+pluginNameUpper+"_QUERY_CMD"] = "/usr/local/bin/" + pluginName + " -dump"
+
+		env := map[string]string{
+			"KONG_PLUGINS":            appendToCommaSeparatedList(req.Env["KONG_PLUGINS"], pluginName),
+			"KONG_PLUGINSERVER_NAMES": appendToCommaSeparatedList(req.Env["KONG_PLUGINSERVER_NAMES"], pluginName),
+			"KONG_PLUGINSERVER_" + pluginNameUpper + "_START_CMD": "/usr/local/bin/" + pluginName,
+			"KONG_PLUGINSERVER_" + pluginNameUpper + "_QUERY_CMD": "/usr/local/bin/" + pluginName + " -dump",
+		}
+
+		WithKongEnv(env)(req)
 	}
 }
 
