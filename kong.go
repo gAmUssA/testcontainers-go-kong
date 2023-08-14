@@ -3,7 +3,6 @@ package kong
 import (
 	"context"
 	"fmt"
-	"log"
 	"path/filepath"
 	"strings"
 
@@ -65,7 +64,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerRequest)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	return &kongContainer{Container: container}, nil
