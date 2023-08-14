@@ -36,10 +36,6 @@ func (g *TestLogConsumer) Accept(l testcontainers.Log) {
 }
 
 func TestKongAdminAPI_ReturnVersion(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-
 	ctx := context.Background()
 
 	tests := []struct {
@@ -96,10 +92,6 @@ func TestKongAdminAPI_ReturnVersion(t *testing.T) {
 }
 
 func TestKongGoPlugin_ModifiesHeaders(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-
 	ctx := context.Background()
 
 	kong, err := RunContainer(ctx,
