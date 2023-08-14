@@ -83,6 +83,7 @@ func TestKongAdminAPI_ReturnVersion(t *testing.T) {
 			})
 
 			adminUrl, proxy, err := kong.KongUrls(ctx)
+			require.Nil(t, err)
 
 			e := httpexpect.Default(t, adminUrl)
 
@@ -166,6 +167,7 @@ func TestKongGoPlugin_ModifiesHeaders(t *testing.T) {
 	})
 
 	_, proxyUrl, err := kong.KongUrls(ctx)
+	require.Nil(t, err)
 
 	e := httpexpect.Default(t, proxyUrl)
 
