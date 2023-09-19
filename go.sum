@@ -4,8 +4,8 @@ github.com/AdaLogics/go-fuzz-headers v0.0.0-20230106234847-43070de90fa1 h1:EKPd1
 github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 h1:UQHMgLO+TxOElx5B5HZ4hJQsoJ/PvUvKRhJHDQXO8P8=
 github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1/go.mod h1:xomTg63KZ2rFqZQzSB4Vz2SUXa1BpHTVz9L5PTmPC4E=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
-github.com/Kong/go-pdk v0.8.0 h1:5HvFuADux2KUOxoEEESie0s1wlFJdNzTl3IQ+UKokyo=
-github.com/Kong/go-pdk v0.8.0/go.mod h1:D6tpamZZ1hZp3PEksGCbvlS+g0J2RhGTw7eZW3D7v5I=
+github.com/Kong/go-pdk v0.10.0 h1:hm+xWDWPQeevfvOzkf4OxGf9OgT/wGh87Blq3JF9SEU=
+github.com/Kong/go-pdk v0.10.0/go.mod h1:RpQobOb9he/PUPisKnjy4EM/xJ6o69BFOgBMrxu3gZ4=
 github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migciow=
 github.com/Microsoft/go-winio v0.6.1/go.mod h1:LRdKpFKfdobln8UmuiYcKPot9D2v6svN5+sAH+4kjUM=
 github.com/Microsoft/hcsshim v0.10.0-rc.8 h1:YSZVvlIIDD1UxQpJp0h+dnpLUw+TrY0cx8obKsp3bek=

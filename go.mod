@@ -3,7 +3,7 @@ module github.com/gamussa/testcontainers-go-kong
 go 1.20
 
 require (
-	github.com/Kong/go-pdk v0.8.0
+	github.com/Kong/go-pdk v0.10.0
 	github.com/docker/go-connections v0.4.0
 	github.com/gavv/httpexpect/v2 v2.15.0
 	github.com/go-http-utils/headers v0.0.0-20181008091004-fed159eddc2a
