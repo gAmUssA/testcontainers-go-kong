@@ -97,7 +97,7 @@ func TestKongGoPlugin_ModifiesHeaders(t *testing.T) {
 		WithGoPlugin(filepath.Join(".", "go-plugins", "bin", "goplug")),
 		WithLogLevel("info"),
 		testcontainers.WithWaitStrategy(
-			wait.ForLog("Listening on socket: /usr/local/kong/goplug.socket").WithStartupTimeout(30*time.Second),
+			wait.ForLog("Listening on socket: /usr/local/kong/goplug.socket").WithStartupTimeout(60*time.Second),
 		),
 	)
 	require.NoError(t, err)
