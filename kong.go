@@ -3,48 +3,60 @@ package kong
 import (
 	"context"
 	"fmt"
-	"github.com/docker/go-connections/nat"
-	"log"
+	"path/filepath"
+	"strings"
 
+	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 type kongContainer struct {
 	testcontainers.Container
-	URI      string
-	ProxyURI string
+	Host       string
+	AdminURL   string
+	ProxyURL   string
+	ManagerURL string
 }
 
 // TODO: mention all ports
 var (
-	defaultProxyPort    = "8000/tcp"
-	defaultAdminAPIPort = "8001/tcp"
+	defaultProxyPort       = "8000/tcp"
+	defaultAdminAPIPort    = "8001/tcp"
+	defaultKongManagerPort = "8002/tcp"
 )
 
-func SetupKong(ctx context.Context,
-	image string,
-	environment map[string]string,
-	files []testcontainers.ContainerFile,
-	opts ...testcontainers.ContainerCustomizer) (*kongContainer, error) {
-
+// RunContainer is the entrypoint to the module
+func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*kongContainer, error) {
 	req := testcontainers.ContainerRequest{
-		// needed because the official Docker image does not have the go-plugins/bin directory already created
-		FromDockerfile: testcontainers.FromDockerfile{
-			Context: ".",
-			BuildArgs: map[string]*string{
-				"TC_KONG_IMAGE": &image,
-			},
-			PrintBuildLog: true,
-		},
+		Image: "kong/kong:3.4.0",
 		ExposedPorts: []string{
 			defaultProxyPort,
-			defaultAdminAPIPort},
+			defaultAdminAPIPort,
+			defaultKongManagerPort,
+		},
 		WaitingFor: wait.ForListeningPort(nat.Port(defaultAdminAPIPort)),
 		Cmd:        []string{"kong", "start"},
-		Env:        environment,
-		Files:      files,
+		Env: map[string]string{
+			// default env variables, can be overwritten in test method
+			"KONG_DATABASE":           "off",
+			"KONG_LOG_LEVEL":          "debug",
+			"KONG_PROXY_ACCESS_LOG":   "/dev/stdout",
+			"KONG_ADMIN_ACCESS_LOG":   "/dev/stdout",
+			"KONG_PROXY_ERROR_LOG":    "/dev/stderr",
+			"KONG_ADMIN_ERROR_LOG":    "/dev/stderr",
+			"KONG_ADMIN_LISTEN":       "0.0.0.0:8001",
+			"KONG_DECLARATIVE_CONFIG": "/usr/local/kong/kong.yaml",
+		},
+		Files: []testcontainers.ContainerFile{
+			{
+				HostFilePath:      filepath.Join(".", "testdata", "kong-config-default.yaml"),
+				ContainerFilePath: "/usr/local/kong/kong.yaml",
+				FileMode:          0644, // see
+			},
+		},
 	}
+
 	genericContainerRequest := testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
@@ -55,9 +67,8 @@ func SetupKong(ctx context.Context,
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerRequest)
-
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	ip, err := container.Host(ctx)
@@ -65,19 +76,92 @@ func SetupKong(ctx context.Context,
 		return nil, err
 	}
 
-	mappedPort, err := container.MappedPort(ctx, nat.Port(defaultAdminAPIPort))
+	adminMappedPort, err := container.MappedPort(ctx, nat.Port(defaultAdminAPIPort))
 	if err != nil {
 		return nil, err
 	}
-
-	uri := fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
 
 	proxyMappedPort, err := container.MappedPort(ctx, nat.Port(defaultProxyPort))
 	if err != nil {
 		return nil, err
 	}
 
-	pUri := fmt.Sprintf("http://%s:%s", ip, proxyMappedPort.Port())
+	managerMappedPort, err := container.MappedPort(ctx, nat.Port(defaultKongManagerPort))
+	if err != nil {
+		return nil, err
+	}
 
-	return &kongContainer{Container: container, URI: uri, ProxyURI: pUri}, nil
+	return &kongContainer{
+		Container:  container,
+		Host:       ip,
+		AdminURL:   fmt.Sprintf("http://%s:%s", ip, adminMappedPort.Port()),
+		ProxyURL:   fmt.Sprintf("http://%s:%s", ip, proxyMappedPort.Port()),
+		ManagerURL: fmt.Sprintf("http://%s:%s", ip, managerMappedPort.Port()),
+	}, nil
+}
+
+// WithConfig adds the kong config file to the container, in the
+// "/usr/local/kong/kong.yaml" directory of the container, and
+// setting the KONG_DECLARATIVE_CONFIG environment variable to that path.
+func WithConfig(cfg string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		req.Files = append(req.Files, testcontainers.ContainerFile{
+			HostFilePath:      cfg,
+			ContainerFilePath: "/usr/local/kong/kong.yaml",
+			FileMode:          0644, // see https://github.com/supabase/cli/pull/132/files
+		})
+
+		// is this variable needed by the default kong image?
+		WithKongEnv(map[string]string{"KONG_DECLARATIVE_CONFIG": "/usr/local/kong/kong.yaml"})(req)
+	}
+}
+
+// WithKongEnv sets environment variables for kong container, possibly overwriting defaults
+func WithKongEnv(env map[string]string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		for k, v := range env {
+			req.Env[k] = v
+		}
+	}
+}
+
+// WithLogLevel sets log level for kong container, using the KONG_LOG_LEVEL environment variable.
+func WithLogLevel(level string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		WithKongEnv(map[string]string{"KONG_LOG_LEVEL": level})(req)
+	}
+}
+
+// WithGoPlugin adds a Go plugin to the container, in the "/usr/local/bin" directory of the container
+// appending the plugin name to the KONG_PLUGINS and KONG_PLUGINSERVER_NAMES environment variables,
+// and setting the KONG_PLUGINSERVER_GOPLUG_START_CMD and KONG_PLUGINSERVER_GOPLUG_QUERY_CMD to the
+// executable path of the plugin.
+func WithGoPlugin(goPlugPath string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		pluginName := filepath.Base(goPlugPath) // should be goplug
+
+		req.Files = append(req.Files, testcontainers.ContainerFile{
+			HostFilePath:      goPlugPath,
+			ContainerFilePath: "/usr/local/bin/" + pluginName,
+			FileMode:          0755,
+		})
+
+		pluginNameUpper := strings.ToUpper(pluginName)
+
+		env := map[string]string{
+			"KONG_PLUGINS":            appendToCommaSeparatedList(req.Env["KONG_PLUGINS"], pluginName),
+			"KONG_PLUGINSERVER_NAMES": appendToCommaSeparatedList(req.Env["KONG_PLUGINSERVER_NAMES"], pluginName),
+			"KONG_PLUGINSERVER_" + pluginNameUpper + "_START_CMD": "/usr/local/bin/" + pluginName,
+			"KONG_PLUGINSERVER_" + pluginNameUpper + "_QUERY_CMD": "/usr/local/bin/" + pluginName + " -dump",
+		}
+
+		WithKongEnv(env)(req)
+	}
+}
+
+func appendToCommaSeparatedList(list, item string) string {
+	if len(list) > 0 {
+		return list + "," + item
+	}
+	return item
 }

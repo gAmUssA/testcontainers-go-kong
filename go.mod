@@ -1,6 +1,6 @@
 module github.com/gamussa/testcontainers-go-kong
 
-go 1.19
+go 1.20
 
 require (
 	github.com/Kong/go-pdk v0.8.0

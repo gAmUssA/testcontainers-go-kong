@@ -20,7 +20,10 @@ const Version string = "0.0.1"
 const Priority = 1
 
 func main() {
-	server.StartServer(New, Version, Priority)
+	err := server.StartServer(New, Version, Priority)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func (c Config) Access(kong *pdk.PDK) {
@@ -29,7 +32,10 @@ func (c Config) Access(kong *pdk.PDK) {
 
 	if c.Attach {
 		if strings.Contains(userAgent, "Kong Builders") {
-			kong.Response.SetHeader("X-Kong-Builders", "Welcome to the jungle 🌴")
+			err := kong.Response.SetHeader("X-Kong-Builders", "Welcome to the jungle 🌴")
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 }
