@@ -136,3 +136,72 @@ func TestKongGoPlugin_ModifiesHeaders(t *testing.T) {
 	value := res.Headers.Host
 	assert.True(t, strings.Contains(value, "mockbin"))
 }
+
+func TestProxyWasmFilter_HelloWorld(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name    string
+		image   string
+		version string
+	}{
+		{
+			name:    "Kong OSS",
+			image:   "kong/kong:3.4.0",
+			version: "kong/3.4.0",
+		},
+		{
+			name:    "Kong Gateway",
+			image:   "kong/kong-gateway:3.4.0.0",
+			version: "kong/3.4.0.0-enterprise-edition",
+		},
+		{
+			name:    "Kong Nightly",
+			image:   "kong/kong:nightly",
+			version: "kong/3.5.0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			kong, err := RunContainer(ctx,
+				testcontainers.WithImage(tt.image),
+				WithConfig(filepath.Join(".", "testdata", "kong-proxy-wasm-hello-world.yml")),
+				WithWasmFilter(filepath.Join(".", "proxy-wasm-go-filter", "bin", "hello-world.wasm")),
+				WithLogLevel("info"),
+				testcontainers.WithWaitStrategy(
+					wait.ForLog("OnPluginStart from Go!").WithStartupTimeout(60*time.Second),
+				),
+			)
+			require.NoError(t, err)
+
+			consumer := TestLogConsumer{
+				Msgs: []string{},
+				Ack:  make(chan bool),
+			}
+			err = kong.StartLogProducer(ctx)
+			assert.Nil(t, err)
+
+			defer kong.StopLogProducer()
+			kong.FollowOutput(&consumer)
+
+			// Clean up the container after the test is complete
+			t.Cleanup(func() {
+				if err := kong.Terminate(ctx); err != nil {
+					t.Fatalf("failed to terminate container: %s", err)
+				}
+			})
+
+			e := httpexpect.Default(t, kong.ProxyURL)
+
+			r := e.GET("/").
+				Expect()
+			r.Status(http.StatusOK).
+				Header("X-Wasm-Header").
+				IsEqual("Works!")
+
+			r.Header("Via").IsEqual(tt.version)
+
+		})
+	}
+}

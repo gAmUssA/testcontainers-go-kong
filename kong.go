@@ -159,6 +159,26 @@ func WithGoPlugin(goPlugPath string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+func WithWasmFilter(wasmFiltersPath string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) {
+		filter := filepath.Base(wasmFiltersPath) // should be hello-world.wasm
+
+		req.Files = append(req.Files, testcontainers.ContainerFile{
+			HostFilePath:      wasmFiltersPath,
+			ContainerFilePath: "/usr/local/bin/" + filter,
+			FileMode:          0755,
+		})
+
+		env := map[string]string{
+			"KONG_WASM":              "on",
+			"KONG_WASM_FILTERS_PATH": "/usr/local/bin",
+			"KONG_NGINX_WASM_SHM_KONG_WASM_RATE_LIMITING_COUNTERS": "12m",
+		}
+		WithKongEnv(env)(req)
+
+	}
+}
+
 func appendToCommaSeparatedList(list, item string) string {
 	if len(list) > 0 {
 		return list + "," + item

@@ -1,0 +1,18 @@
+_format_version: "3.0"
+_transform: true
+
+services:
+  - name: demo
+    url: http://mockbin.org
+    routes:
+      - name: my-route
+        paths:
+          - /
+        strip_path: false
+        filter_chains:
+          - filters:
+              - name: hello-world
+                config: >-
+                  {
+                    "header_name": "X-Wasm-Header", "header_value": "Works!"
+                  }
