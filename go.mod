@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/Kong/go-pdk v0.10.0
-	github.com/docker/go-connections v0.4.0
+	github.com/docker/go-connections v0.5.0
 	github.com/gavv/httpexpect/v2 v2.16.0
 	github.com/go-http-utils/headers v0.0.0-20181008091004-fed159eddc2a
 	github.com/stretchr/testify v1.8.4
